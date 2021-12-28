@@ -116,7 +116,7 @@ class SHAPE:
         else:
             print("SHAPE 类初始化参数不足")
 
-        self.is_visited = False
+        self.is_checked = False
         self.group_id = -1
         self.color = COLOR.NOCOLOR
         self.neighbor = []
@@ -340,7 +340,7 @@ class COLOR_BALANCING_CASE:
         plt.show()
 
     # 设置分组
-    def set_groups(self):
+    def set_groups(self): 
         group_id = 1
         # 通过 queue 实现
         visiting_shapes = Queue(maxsize=0)
@@ -380,7 +380,7 @@ class COLOR_BALANCING_CASE:
                                 group.shapes.append(self.shapes[j])
                                 self.shapes[j].group_id = group_id
                                 visiting_shapes.put(self.shapes[j])
-                                from_shapes.put(self.shapes[j])
+                                from_shapes.put(current_shape)
                 
                 group_id = group_id + 1
 
@@ -393,8 +393,22 @@ class COLOR_BALANCING_CASE:
         from_shapes = Queue(maxsize=0)
         is_colorable = True
 
+        # 遍历所有的 group
         for i in range(0, len(self.groups)):
-            pass
+
+            # 获取当前 group 的一个 shape
+            start_shape = self.groups[i].shapes[0]
+            start_shape.is_checked = True
+
+            # 遍历第一个 shape 的所有 neighbor
+            for j in range(0, len(start_shape.neighbor)):
+                start_shape.neighbor[0].is_checked = True
+                visiting_shapes.put(start_shape.neighbor[0])
+                from_shapes.put(start_shape)
+            
+            while not visiting_shapes.empty():
+                pass
+
 
 
                                 
