@@ -388,9 +388,7 @@ void Coloring_Bounding_Box::mark_color_state(){
 			visiting_queue.push(current_neighbor);
 			from_queue.push(s);
 		}
-
-
-
+		
 		while(!visiting_queue.empty())
 		{
 			s = visiting_queue.front();
@@ -431,6 +429,7 @@ void Coloring_Bounding_Box::mark_color_state(){
 								
 			}
 		}	
+		
 		if (isColorable){
 			isColorable = true;
 			current_group->isColorable = true;

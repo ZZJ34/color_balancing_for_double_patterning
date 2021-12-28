@@ -1,7 +1,13 @@
 from enum import Enum
 from queue import Queue
+import math
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+
+# 定义全局变量
+x_spacing = 0
+y_spacing = 0
+dens_win_size = 0
 
 # 定义颜色填充枚举值
 class COLOR(Enum):
@@ -10,10 +16,6 @@ class COLOR(Enum):
     CA = 1             # 颜色填充 CA
     CB = 2             # 颜色填充 CB
 
-# 定义全局变量
-x_spacing = 0
-y_spacing = 0
-dens_win_size = 0
 
 # 定义坐标类
 class COOR:
@@ -116,11 +118,11 @@ class SHAPE:
         else:
             print("SHAPE 类初始化参数不足")
 
-        self.is_checked = False
         self.group_id = -1
-        self.color = COLOR.NOCOLOR
+        self.color = None
         self.neighbor = []
         self.window = None
+        self.is_checked = False
     
     # 获取四个坐标值
     def top(self):
@@ -218,7 +220,6 @@ class SHAPE_GROUP:
         self.area_A = 0
         self.area_B = 0
         self.shapes = []
-        self.start_color = None
         self.is_colorable = False
 
     def color_shapes(self, initial_color):
@@ -235,6 +236,7 @@ class SHAPE_GROUP:
                             self.shapes[i].neighbor[j].color == COLOR.CB
                         elif self.shapes[i].color == COLOR.CB:
                             self.shapes[i].neighbor[j].color == COLOR.CA
+        
         # 检查该组的所有 shape 是否已经上色，并且 neighbor 是否违规
         for i in range(0, len(self.shapes)):
             if self.shapes[i].color == COLOR.NOCOLOR:
@@ -255,15 +257,33 @@ class COLOR_BALANCING_CASE:
     def __init__(self, file_dir):
         self.shapes = []
         self.groups = []
+        self.windows = []
         self.groups_num = 0
 
         self.min_left = float("inf")
         self.max_right = float("-inf")
         self.min_bottom = float("inf")
         self.max_top = float("-inf")
-
+        
+        # 加载数据
+        print("**************  加载数据  **************")
         self.load_data(self.read_file(file_dir))
-        self.set_bounding_and_visualization()
+
+        # 设置分组
+        print("**************  设置分组  **************")
+        self.set_groups()
+
+        # 设置组是否可上色
+        print("*********  检查分组是否可上色  *********")
+        self.set_groups_is_colorable()
+
+        # 设置边界
+        print("**************  设置边界  **************")
+        self.set_bounding()
+
+        # 设置检查窗口
+        print("**************  设置窗口  **************")
+        self.set_windows()
 
     # 读取文件
     def read_file(self, input_file_path):
@@ -304,40 +324,17 @@ class COLOR_BALANCING_CASE:
             self.shapes.append(shape_item)
     
     # 设置边界并可视化
-    def set_bounding_and_visualization(self):
-        coords = []
+    def set_bounding(self):
 
         for shape in self.shapes:
             # [x1,y1,x2,y2]坐标转换成[left,top,width,height]
-            [x1, y1, x2, y2] = [shape.left(), shape.bottom(), shape.right(), shape.top()]
-            width  = x2 - x1       
-            height = y2 - y1   
-            left   = x1                 
-            bottom = y1                   
-
-            coords.append([left, bottom, width, height])
+            [x1, y1, x2, y2] = [shape.left(), shape.bottom(), shape.right(), shape.top()]              
 
             self.min_left = x1 if x1 < self.min_left else self.min_left
             self.min_bottom = y1 if y1 < self.min_bottom else self.min_bottom
 
             self.max_right = x2 if x2 > self.max_right else self.max_right
             self.max_top = y2 if y2 > self.max_top else self.max_top
-    
-
-        fig1 = plt.figure()
-        ax1 = fig1.add_subplot(111)
-    
-        # 绘制矩形
-        for index, coord in enumerate(coords):
-            [left, bottom, width, height] = coord
-
-            rect = patches.Rectangle((left, bottom), width, height,  linewidth=0.1, edgecolor='r',facecolor='gray')
-            ax1.add_patch(rect)
-        
-        plt.xlim(self.min_left-20, self.max_right+20)
-        plt.ylim(self.min_bottom-20, self.max_top+20)
-
-        plt.show()
 
     # 设置分组
     def set_groups(self): 
@@ -391,29 +388,85 @@ class COLOR_BALANCING_CASE:
         
         visiting_shapes = Queue(maxsize=0)
         from_shapes = Queue(maxsize=0)
-        is_colorable = True
 
         # 遍历所有的 group
         for i in range(0, len(self.groups)):
+            # 默认当前的 group 可以上色
+            is_colorable = True
 
             # 获取当前 group 的一个 shape
-            start_shape = self.groups[i].shapes[0]
-            start_shape.is_checked = True
+            first_shape = self.groups[i].shapes[0]
+            first_shape.is_checked = True
 
             # 遍历第一个 shape 的所有 neighbor
-            for j in range(0, len(start_shape.neighbor)):
-                start_shape.neighbor[0].is_checked = True
-                visiting_shapes.put(start_shape.neighbor[0])
-                from_shapes.put(start_shape)
+            for j in range(0, len(first_shape.neighbor)):
+                first_shape.neighbor[0].is_checked = True
+                visiting_shapes.put(first_shape.neighbor[0])
+                from_shapes.put(first_shape)
             
             while not visiting_shapes.empty():
-                pass
 
+                current_shape = visiting_shapes.get()
 
+                from_shape = from_shapes.get()
 
-                                
+                for j in range(0, len(current_shape.neighbor)):
+                    current_shape_neighbor = current_shape.neighbor[j]
 
+                    if current_shape_neighbor.is_checked == False:
+                        current_shape_neighbor.is_checked = True
+                        visiting_shapes.put(current_shape_neighbor)
+                        from_shapes.put(current_shape)
+                    
+                    # 此时 3 个 shape 彼此相连无法上色
+                    if current_shape_neighbor.is_neighbor(from_shape):
+                        is_colorable = False
+                        # 中止  for j in range(0, len(current_shape.neighbor))  循环
+                        break   
 
+                if is_colorable == False:
+                    # 中止  while not visiting_shapes.empty()  循环
+                    break    
+            
+            # 根据 is_colorable 更新状态
+            if is_colorable:
+                # 该 group 可以上色
+                self.groups[i].is_colorable = True
+                for shape_item in  self.groups[i].shapes:
+                    shape_item.color = COLOR.NOCOLOR
+            else:
+                # 该 group 可以不上色
+                self.groups[i].is_colorable = False
+                for shape_item in  self.groups[i].shapes:
+                    shape_item.color = COLOR.UNCOLORABLE
+    
+    # 设置 windows
+    def set_windows(self):
+        global dens_win_size
 
+        width = self.max_right - self.min_left
+        height = self.max_top - self.min_bottom
 
+        x_num = math.ceil(width/dens_win_size)
+        y_num = math.ceil(height/dens_win_size)
 
+        for i in range(1, x_num+1):
+            if i < x_num:
+                for j in range(1, y_num):
+                    left_bottom_coor = COOR(x=self.min_left+(i-1)*dens_win_size, y=self.min_bottom+(j-1)*dens_win_size)
+                    color_density_window = COLOR_DENSITY_WINDOWS(dens_win_size, left_bottom_coor)
+                    self.windows.append(color_density_window)
+                # 到达 bounding 上边界
+                left_bottom_coor = COOR(x=self.min_left+(i-1)*dens_win_size, y=self.max_top-dens_win_size)
+                color_density_window = COLOR_DENSITY_WINDOWS(dens_win_size, left_bottom_coor)
+                self.windows.append(color_density_window)
+            # 到达 bounding 右边界
+            else:
+                for j in range(1, y_num):
+                    left_bottom_coor = COOR(x=self.max_right-dens_win_size, y=self.min_bottom+(j-1)*dens_win_size)
+                    color_density_window = COLOR_DENSITY_WINDOWS(dens_win_size, left_bottom_coor)
+                    self.windows.append(color_density_window)
+                # 到达 bounding 上边界
+                left_bottom_coor = COOR(x=self.max_right-dens_win_size, y=self.max_top-dens_win_size)
+                color_density_window = COLOR_DENSITY_WINDOWS(dens_win_size, left_bottom_coor)
+                self.windows.append(color_density_window)

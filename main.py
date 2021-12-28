@@ -1,5 +1,3 @@
-from shape import COOR
-from shape import COLOR_DENSITY_WINDOWS
 from shape import COLOR_BALANCING_CASE
 
 
