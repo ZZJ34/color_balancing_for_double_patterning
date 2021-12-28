@@ -1,5 +1,5 @@
 from enum import Enum
-from matplotlib.colors import from_levels_and_colors
+from queue import Queue
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -342,45 +342,59 @@ class COLOR_BALANCING_CASE:
     # 设置分组
     def set_groups(self):
         group_id = 1
-        visiting_shapes = []
-        from_shapes = []
+        # 通过 queue 实现
+        visiting_shapes = Queue(maxsize=0)
+        from_shapes = Queue(maxsize=0)
 
         for i in range(0, len(self.shapes)):
-            if not (self.shapes[i].group_id == -1):
-                continue
-            else:
+            if self.shapes[i].group_id == -1:
+                # 注：如果当前的 shape 没有 group_id，则意味着其和其的相邻 shape 都没有 group_id
+                # 此时应该新建一个组
+                
+                # 创建一个组
                 group = SHAPE_GROUP()
                 group.id = group_id
                 self.groups.append(group)
 
                 self.shapes[i].group_id = group_id
-                visiting_shapes.insert(0, self.shapes[i])
+
+                visiting_shapes.put(self.shapes[i])
+                from_shapes.put(None)
                 
-                self.groups[group_id-1].shapes.append(self.shapes[i])
+                # 将当前的 shape 加入到 新创建的 group
+                group.shapes.append(self.shapes[i])
 
-                while not len(visiting_shapes) == 0:
-                    current_shape = visiting_shapes[0]
-                    visiting_shapes = visiting_shapes[1:]
+                # 遍历所有的 neighbor（包括 neighbor 的 neighbor ）
+                while not visiting_shapes.empty():
+                    current_shape = visiting_shapes.get()
+                    from_shape = from_shapes.get()
 
-                    from_shape = None if len(from_shapes) == 0 else from_shapes[0]
-                    from_shapes = [] if len(from_shapes) == 0 else from_shapes[1:]
-
+                    # 遍历 shape ，找 current_shape 的邻居
                     for j in range(0, len(self.shapes)):
+
+                        # 找到一个 neighbor
                         if current_shape.is_neighbor(self.shapes[j]):
-                            if self.shapes[j] == from_shape:
-                                current_shape.set_neighbor(self.shapes[j])
-                                continue
-                            else:
-                                current_shape.set_neighbor(self.shapes[j])
-                                if self.shapes[j].group_id == -1:
-                                    self.groups[group_id-1].shapes.append(self.shapes[j])
-                                    self.shapes[j].group_id = group_id
-                                    visiting_shapes.insert(0, self.shapes[j])
-                                    from_shapes.insert(0, self.shapes[j])
+                            current_shape.set_neighbor(self.shapes[j])
+
+                            if (not self.shapes[j] == from_shape) and self.shapes[j].group_id == -1:
+                                group.shapes.append(self.shapes[j])
+                                self.shapes[j].group_id = group_id
+                                visiting_shapes.put(self.shapes[j])
+                                from_shapes.put(self.shapes[j])
                 
                 group_id = group_id + 1
 
         self.groups_num = group_id
+
+    # 设置 group 是否可上色
+    def set_groups_is_colorable(self):
+        
+        visiting_shapes = Queue(maxsize=0)
+        from_shapes = Queue(maxsize=0)
+        is_colorable = True
+
+        for i in range(0, len(self.groups)):
+            pass
 
 
                                 
