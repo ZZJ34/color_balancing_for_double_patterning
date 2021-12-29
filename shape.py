@@ -4,8 +4,6 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-from visualization import result_pic
-
 # 定义全局变量
 x_spacing = 0
 y_spacing = 0
@@ -256,7 +254,7 @@ class SHAPE_GROUP:
 # 定义测试案例类
 class COLOR_BALANCING_CASE:
 
-    def __init__(self, file_dir):
+    def __init__(self, file_dir, is_show_case=False, is_show_visualization=False):
         self.shapes = []
         self.groups = []
         self.windows = []
@@ -286,9 +284,11 @@ class COLOR_BALANCING_CASE:
         print("**************  设置窗口  **************")
         self.set_windows()
 
-
-        # self.show_case()
-        # self.show_visualization()
+        if is_show_case:
+            self.show_case()
+        
+        if is_show_visualization:
+            self.show_visualization()
 
     # 读取文件
     def read_file(self, input_file_path):
@@ -581,17 +581,3 @@ class COLOR_BALANCING_CASE:
             score = score + float(100/groups_num) - group_item.length*float(abs(group_item.density_A-group_item.density_B))
 
         return score
-
-
-        
-
-
-            
-
-
-
-
-
-
-
-
