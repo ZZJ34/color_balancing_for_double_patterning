@@ -4,6 +4,8 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+from visualization import result_pic
+
 # 定义全局变量
 x_spacing = 0
 y_spacing = 0
@@ -208,9 +210,9 @@ class SHAPE:
     
     # 打印 shape 信息
     def show_shape(self):
-        print("%f, %f, %f, %f", self.left(), self.bottom(), self.right(), self.top())
-        print("color    : %s", self.color.name)
-        print("group_id : %s", self.group_id)
+        print("%f, %f, %f, %f" % (self.left(), self.bottom(), self.right(), self.top()))
+        print("color    : %s" % self.color.name)
+        print("group_id : %s" % self.group_id)
 
 # 定义形状组类
 class SHAPE_GROUP:
@@ -258,7 +260,6 @@ class COLOR_BALANCING_CASE:
         self.shapes = []
         self.groups = []
         self.windows = []
-        self.groups_num = 0
 
         self.min_left = float("inf")
         self.max_right = float("-inf")
@@ -284,6 +285,10 @@ class COLOR_BALANCING_CASE:
         # 设置检查窗口
         print("**************  设置窗口  **************")
         self.set_windows()
+
+
+        # self.show_case()
+        # self.show_visualization()
 
     # 读取文件
     def read_file(self, input_file_path):
@@ -381,18 +386,16 @@ class COLOR_BALANCING_CASE:
                 
                 group_id = group_id + 1
 
-        self.groups_num = group_id
-
     # 设置 group 是否可上色
     def set_groups_is_colorable(self):
-        
-        visiting_shapes = Queue(maxsize=0)
-        from_shapes = Queue(maxsize=0)
 
         # 遍历所有的 group
         for i in range(0, len(self.groups)):
             # 默认当前的 group 可以上色
             is_colorable = True
+
+            visiting_shapes = Queue(maxsize=0)
+            from_shapes = Queue(maxsize=0)
 
             # 获取当前 group 的一个 shape
             first_shape = self.groups[i].shapes[0]
@@ -427,17 +430,19 @@ class COLOR_BALANCING_CASE:
                 if is_colorable == False:
                     # 中止  while not visiting_shapes.empty()  循环
                     break    
-            
+
             # 根据 is_colorable 更新状态
             if is_colorable:
                 # 该 group 可以上色
                 self.groups[i].is_colorable = True
                 for shape_item in  self.groups[i].shapes:
+                    shape_item.is_checked = False
                     shape_item.color = COLOR.NOCOLOR
             else:
                 # 该 group 可以不上色
                 self.groups[i].is_colorable = False
                 for shape_item in  self.groups[i].shapes:
+                    shape_item.is_checked = False
                     shape_item.color = COLOR.UNCOLORABLE
     
     # 设置 windows
@@ -470,3 +475,123 @@ class COLOR_BALANCING_CASE:
                 left_bottom_coor = COOR(x=self.max_right-dens_win_size, y=self.max_top-dens_win_size)
                 color_density_window = COLOR_DENSITY_WINDOWS(dens_win_size, left_bottom_coor)
                 self.windows.append(color_density_window)
+
+    # 打印信息
+    def show_case(self):
+        global x_spacing
+        global y_spacing
+        global dens_win_size
+
+        print("x_spacing : %f" % x_spacing)
+        print("y_spacing : %f" % y_spacing)
+        print("dens_win_size : %f \n" % dens_win_size)
+
+        for group_item in self.groups:
+            print("GROUP %d" % group_item.id)
+            print("is_colorable: %s" % ("true" if group_item.is_colorable else "false"))
+            print("group_size: %d" % len(group_item.shapes))
+
+            for shape_item in group_item.shapes:
+                shape_item.show_shape()
+
+            print("*****************************************")
+
+    # 可视化
+    def show_visualization(self):
+        
+        shape_coords = []
+        windows_coords = []
+
+        for rect in self.shapes:
+            # [x1,y1,x2,y2]坐标转换成[left,top,width,height]
+            [x1, y1, x2, y2] = [rect.left(), rect.bottom(), rect.right(), rect.top()]
+            width  = x2 - x1       
+            height = y2 - y1   
+            left   = x1                 
+            bottom = y1                   
+            shape_coords.append([left, bottom, width, height])
+
+        for rect in self.windows:
+            width  = rect.length
+            height = rect.length  
+            left   = rect.left_bottom_coor.x                 
+            bottom = rect.left_bottom_coor.y
+            windows_coords.append([left, bottom, width, height])   
+
+        # 展示所有的 shape
+        fig1 = plt.figure()
+        ax1 = fig1.add_subplot(111)
+        for index, coord in enumerate(shape_coords):
+            [left, bottom, width, height] = coord
+
+            rect = patches.Rectangle((left, bottom), width, height,  linewidth=0.2, edgecolor='r', facecolor='gray')
+            ax1.add_patch(rect)
+
+        plt.xlim(self.min_left-10, self.max_right+10)
+        plt.ylim(self.min_bottom-10, self.max_top+10)
+        plt.show()
+
+        # 展示所有的 windows 和 shape
+        fig1 = plt.figure()
+        ax1 = fig1.add_subplot(111)
+        
+        for index, coord in enumerate(shape_coords):
+            [left, bottom, width, height] = coord
+
+            rect = patches.Rectangle((left, bottom), width, height,  linewidth=0.2, edgecolor='r', facecolor='gray')
+            ax1.add_patch(rect)
+
+        for index, coord in enumerate(windows_coords):
+            [left, bottom, width, height] = coord
+
+            rect = patches.Rectangle((left, bottom), width, height,  linewidth=0.5, edgecolor='r', fill=False)
+            ax1.add_patch(rect)
+
+        plt.xlim(self.min_left-10, self.max_right+10)
+        plt.ylim(self.min_bottom-10, self.max_top+10)
+        plt.show()
+
+    # 给所有的组上色
+    def color_all_groups(self, color_sequence):
+        for index, group_item in enumerate(self.groups):
+            result = True
+
+            if color_sequence[index] == 0:
+                result = group_item.color_shapes(COLOR.CA)
+            else:
+                result = group_item.color_shapes(COLOR.CB)
+
+            if result == False:
+                print("上色失败 id:%d" % index)
+                break
+    
+    # 计算 windows 颜色密度
+    def cal_color_density(self):
+        for group_item in self.groups:
+            group_item.cal_density()
+
+    # 计算评分
+    def cal_score(self):
+        self.cal_color_density()
+
+        score = 0
+        groups_num = len(self.groups)
+
+        for group_item in self.groups:
+            score = score + float(100/groups_num) - group_item.length*float(abs(group_item.density_A-group_item.density_B))
+
+        return score
+
+
+        
+
+
+            
+
+
+
+
+
+
+
+
