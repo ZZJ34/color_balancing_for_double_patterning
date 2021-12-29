@@ -8,6 +8,8 @@ if __name__ == "__main__":
 
     case = COLOR_BALANCING_CASE(input_file, is_show_case=True, is_show_visualization=True)
 
+    print(case.colorbale_groups_num)
+
     
     
     

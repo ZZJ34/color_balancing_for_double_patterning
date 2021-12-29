@@ -86,7 +86,7 @@ class COLOR_DENSITY_WINDOWS:
         elif is_right_top_in:
             return (shape_item.right() - self.left_bottom_coor.x) * (shape_item.top() - self.left_bottom_coor.y)
 
-        print("数据错误！该 SHAPE 不在此 WINDOWS 当中")
+        print("数据错误 该 SHAPE 不在此 WINDOWS 当中")
     
     # 计算颜色密度
     def cal_density(self):
@@ -225,7 +225,7 @@ class SHAPE_GROUP:
     def color_shapes(self, initial_color):
         # 初始颜色可以是 CA 或者 CB
         if not self.is_colorable:
-            return False
+            print(" 当前 group %d 不可上色" % self.id)
         else:
             self.shapes[0].color = initial_color
             for i in range(0, len(self.shapes)):
@@ -237,19 +237,17 @@ class SHAPE_GROUP:
                         elif self.shapes[i].color == COLOR.CB:
                             self.shapes[i].neighbor[j].color == COLOR.CA
         
-        # 检查该组的所有 shape 是否已经上色，并且 neighbor 是否违规
-        for i in range(0, len(self.shapes)):
-            if self.shapes[i].color == COLOR.NOCOLOR:
-                print("shape %d", i)
-                print("It is not finished coloring")
-                return False
-            for j in range(0, len(self.shapes[i].neighbor)):
-                if self.shapes[i].color == self.shapes[i].neighbor[j].color:
-                    print("shape %d", i)
-                    print("Coloring is invalid")
-                    return False
-
-        return True
+        # # 检查该组的所有 shape 是否已经上色，并且 neighbor 是否违规
+        # for i in range(0, len(self.shapes)):
+        #     if self.shapes[i].color == COLOR.NOCOLOR:
+        #         print("shape %d", i)
+        #         print("It is not finished coloring")
+        #         return False
+        #     for j in range(0, len(self.shapes[i].neighbor)):
+        #         if self.shapes[i].color == self.shapes[i].neighbor[j].color:
+        #             print("shape %d", i)
+        #             print("Coloring is invalid")
+        #             return False
 
 # 定义测试案例类
 class COLOR_BALANCING_CASE:
@@ -258,6 +256,7 @@ class COLOR_BALANCING_CASE:
         self.shapes = []
         self.groups = []
         self.windows = []
+        self.colorbale_groups_num = 0
 
         self.min_left = float("inf")
         self.max_right = float("-inf")
@@ -435,6 +434,7 @@ class COLOR_BALANCING_CASE:
             if is_colorable:
                 # 该 group 可以上色
                 self.groups[i].is_colorable = True
+                self.colorbale_groups_num += 1
                 for shape_item in  self.groups[i].shapes:
                     shape_item.is_checked = False
                     shape_item.color = COLOR.NOCOLOR
@@ -553,31 +553,32 @@ class COLOR_BALANCING_CASE:
 
     # 给所有的组上色
     def color_all_groups(self, color_sequence):
-        for index, group_item in enumerate(self.groups):
-            result = True
+        
+        index = 0
+        # 这里 color_sequence 的长度应该和可以上色的组的数量相同
+        for group_item in self.groups:
+            if group_item.is_colorable == True:
+                if color_sequence[index] == 0:
+                    group_item.color_shapes(COLOR.CA)
+                else:
+                    group_item.color_shapes(COLOR.CB)
+                index += 1
 
-            if color_sequence[index] == 0:
-                result = group_item.color_shapes(COLOR.CA)
-            else:
-                result = group_item.color_shapes(COLOR.CB)
-
-            if result == False:
-                print("上色失败 id:%d" % index)
-                break
-    
     # 计算 windows 颜色密度
     def cal_color_density(self):
-        for group_item in self.groups:
-            group_item.cal_density()
+        for window_item in self.windows:
+            window_item.cal_density()
 
     # 计算评分
     def cal_score(self):
         self.cal_color_density()
 
         score = 0
-        groups_num = len(self.groups)
 
-        for group_item in self.groups:
-            score = score + float(100/groups_num) - group_item.length*float(abs(group_item.density_A-group_item.density_B))
+        windows_num = len(self.windows)
+        base_score = float(100/windows_num)
+
+        for window_item in self.windows:
+            score = score + base_score - window_item.length*float(abs(window_item.density_A-window_item.density_B))
 
         return score
