@@ -558,7 +558,7 @@ class COLOR_BALANCING_CASE:
         # 这里 color_sequence 的长度应该和可以上色的组的数量相同
         for group_item in self.groups:
             if group_item.is_colorable == True:
-                if color_sequence[index] == 0:
+                if color_sequence[index] == '0':
                     group_item.color_shapes(COLOR.CA)
                 else:
                     group_item.color_shapes(COLOR.CB)
