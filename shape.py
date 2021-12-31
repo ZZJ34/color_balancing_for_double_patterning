@@ -306,7 +306,52 @@ class COLOR_BALANCING_CASE:
 
     #写入文件
     def write_file(self, output_file_path):
-        pass
+        
+        f = open(output_file_path,'w')
+        
+        # 输出所有的 window 信息
+        for index, window_item in enumerate(self.windows):
+            win_left = window_item.left_bottom_coor.x
+            win_bottom = window_item.left_bottom_coor.y
+            win_right = win_left + window_item.length
+            win_top = win_bottom + window_item.length
+
+            f.write("WIN[%d]=" % (index+1))
+            f.write("%d, %d, %d, %d" % (win_left, win_bottom, win_right, win_top))
+            f.write("(%f, %f)" % (window_item.density_A, window_item.density_B))
+
+            f.write("\n")
+        
+        for group_item in self.groups:
+            f.write("GROUP\n")
+            if group_item.is_colorable == True:
+                CA_shapes = []
+                CB_shapes = []
+
+                for shape_item in group_item.shapes:
+                    if shape_item.color == COLOR.CA:
+                        CA_shapes.append(shape_item)
+                    elif shape_item.color == COLOR.CB:
+                        CB_shapes.append(shape_item)
+                
+                for index, shape_item in enumerate(CA_shapes):
+                    f.write("CA[%d]=" % (index+1))
+                    f.write("%d, %d, %d, %d" % (shape_item.left_bottom_coor.x, shape_item.left_bottom_coor.y, shape_item.right_top_coor.x, shape_item.right_top_coor.y))
+                    f.write("\n")
+
+                for index, shape_item in enumerate(CB_shapes):
+                    f.write("CB[%d]=" % (index+1))
+                    f.write("%d, %d, %d, %d" % (shape_item.left_bottom_coor.x, shape_item.left_bottom_coor.y, shape_item.right_top_coor.x, shape_item.right_top_coor.y))
+                    f.write("\n")
+
+            else:
+                for index, shape_item in enumerate(group_item.shapes):
+                    f.write("NO[%d]=" % (index+1))
+                    f.write("%d, %d, %d, %d" % (shape_item.left_bottom_coor.x, shape_item.left_bottom_coor.y, shape_item.right_top_coor.x, shape_item.right_top_coor.y))
+                    f.write("\n")
+
+
+        f.close()
 
     # 数据加载
     def load_data(self, data):
@@ -556,6 +601,52 @@ class COLOR_BALANCING_CASE:
         plt.ylim(self.min_bottom-10, self.max_top+10)
         plt.show()
 
+    # 可视化最终结果
+    def show_result(self):
+        shape_coords = []
+        windows_coords = []
+
+        for rect in self.shapes:
+            # [x1,y1,x2,y2]坐标转换成[left,top,width,height]
+            [x1, y1, x2, y2] = [rect.left(), rect.bottom(), rect.right(), rect.top()]
+            width  = x2 - x1       
+            height = y2 - y1   
+            left   = x1                 
+            bottom = y1                   
+            shape_coords.append([left, bottom, width, height, rect.color])
+
+        for rect in self.windows:
+            width  = rect.length
+            height = rect.length  
+            left   = rect.left_bottom_coor.x                 
+            bottom = rect.left_bottom_coor.y
+            windows_coords.append([left, bottom, width, height])   
+
+        # 展示所有的 windows 和 shape
+        fig1 = plt.figure()
+        ax1 = fig1.add_subplot(111)
+        
+        for index, coord in enumerate(shape_coords):
+            [left, bottom, width, height, color] = coord
+
+            if color == COLOR.UNCOLORABLE:
+                rect = patches.Rectangle((left, bottom), width, height,  linewidth=0.2, edgecolor='r', facecolor='gray')
+            elif color == COLOR.CA:
+                rect = patches.Rectangle((left, bottom), width, height,  linewidth=0.2, edgecolor='g', facecolor='red')
+            elif color == COLOR.CB:
+                rect = patches.Rectangle((left, bottom), width, height,  linewidth=0.2, edgecolor='g', facecolor='blue')
+            ax1.add_patch(rect)
+
+        for index, coord in enumerate(windows_coords):
+            [left, bottom, width, height] = coord
+
+            rect = patches.Rectangle((left, bottom), width, height,  linewidth=0.5, edgecolor='r', fill=False)
+            ax1.add_patch(rect)
+
+        plt.xlim(self.min_left-10, self.max_right+10)
+        plt.ylim(self.min_bottom-10, self.max_top+10)
+        plt.show()
+
     # 给所有的组上色
     def color_all_groups(self, color_sequence):
         # 这里 color_sequence 的长度应该和可以上色的组的数量相同
@@ -585,9 +676,8 @@ class COLOR_BALANCING_CASE:
         score = 0
 
         windows_num = len(self.windows)
-        base_score = float(100/windows_num)
 
         for window_item in self.windows:
-            score = score + base_score - window_item.length*0.015*float(abs(window_item.density_A-window_item.density_B))
+            score += 1-float(abs(window_item.density_A-window_item.density_B))
 
-        return score
+        return score/windows_num

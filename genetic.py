@@ -3,8 +3,8 @@ import random
 import copy
 
 # 定义全局变量
-cross_rate = 0.7        # 交叉率
-mutation_rate = 0.001   # 变异率
+cross_rate = 0.74        # 交叉率
+mutation_rate = 0.002   # 变异率
 
 
 
