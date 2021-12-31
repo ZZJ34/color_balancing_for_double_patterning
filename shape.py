@@ -34,8 +34,8 @@ class COOR:
             print('COOR 类初始化参数不足')
 
     def is_in_window(self, window_item):
-        win_left = window_item.left_bottom.x;
-        win_bottom = window_item.left_bottom.y;
+        win_left = window_item.left_bottom_coor.x;
+        win_bottom = window_item.left_bottom_coor.y;
         win_length = window_item.length;
 
         if self.x > win_left and self.y > win_bottom:
@@ -50,7 +50,7 @@ class COLOR_DENSITY_WINDOWS:
     def __init__(self, length, left_bottom_coor):
         self.length = length                      # 窗口大小
         self.left_bottom_coor = COOR(x=left_bottom_coor.x, y=left_bottom_coor.y)  # 窗口左下角坐标
-        self.shape_list = []                      # 所包含的图案
+        self.shapes = []                          # 所包含的图案
         self.density_A = 0                        # 颜色 A 密度
         self.density_B = 0                        # 颜色 B 密度
 
@@ -93,14 +93,14 @@ class COLOR_DENSITY_WINDOWS:
         area_A = 0  # color = 0
         area_B = 0  # color = 1
 
-        for i in range(0, len(self.shape_list)):
-            if self.shape_list[i].color == COLOR.CA:
-                area_A += self.overlap_area(self.shape_list[i])
-            elif self.shape_list[i].color == COLOR.CB:
-                area_B += self.overlap_area(self.shape_list[i])
+        for i in range(0, len(self.shapes)):
+            if self.shapes[i].color == COLOR.CA:
+                area_A += self.overlap_area(self.shapes[i])
+            elif self.shapes[i].color == COLOR.CB:
+                area_B += self.overlap_area(self.shapes[i])
 
         self.density_A = float( area_A / ( self.length * self.length ))
-        self.density_B = float( area_A / ( self.length * self.length ))
+        self.density_B = float( area_B / ( self.length * self.length ))
 
 # 定义形状类
 class SHAPE:
@@ -228,26 +228,14 @@ class SHAPE_GROUP:
             print(" 当前 group %d 不可上色" % self.id)
         else:
             self.shapes[0].color = initial_color
-            for i in range(0, len(self.shapes)):
+            for shape_item in self.shapes:
                 # 对当前 shape 的 neighbor 进行遍历
-                for j in range(0, len(self.shapes[i].neighbor)):
-                    if self.shapes[i].neighbor[j].color == COLOR.NOCOLOR:
-                        if self.shapes[i].color == COLOR.CA:
-                            self.shapes[i].neighbor[j].color == COLOR.CB
-                        elif self.shapes[i].color == COLOR.CB:
-                            self.shapes[i].neighbor[j].color == COLOR.CA
-        
-        # # 检查该组的所有 shape 是否已经上色，并且 neighbor 是否违规
-        # for i in range(0, len(self.shapes)):
-        #     if self.shapes[i].color == COLOR.NOCOLOR:
-        #         print("shape %d", i)
-        #         print("It is not finished coloring")
-        #         return False
-        #     for j in range(0, len(self.shapes[i].neighbor)):
-        #         if self.shapes[i].color == self.shapes[i].neighbor[j].color:
-        #             print("shape %d", i)
-        #             print("Coloring is invalid")
-        #             return False
+                for shape_item.neighbor_item in shape_item.neighbor:
+                    if shape_item.neighbor_item.color == COLOR.NOCOLOR:
+                        if shape_item.color == COLOR.CA:
+                            shape_item.neighbor_item.color = COLOR.CB
+                        elif shape_item.color == COLOR.CB:
+                            shape_item.neighbor_item.color = COLOR.CA
 
 # 定义测试案例类
 class COLOR_BALANCING_CASE:
@@ -283,6 +271,10 @@ class COLOR_BALANCING_CASE:
         print("**************  设置窗口  **************")
         self.set_windows()
 
+        # 设置检查窗口
+        print("*********  设置图形属于的窗口  *********")
+        self.set_shapes_in_windows()
+
         if is_show_case:
             self.show_case()
         
@@ -311,7 +303,11 @@ class COLOR_BALANCING_CASE:
         input_data['rect'] = rect
 
         return input_data
-    
+
+    #写入文件
+    def write_file(self, output_file_path):
+        pass
+
     # 数据加载
     def load_data(self, data):
         global x_spacing
@@ -326,7 +322,7 @@ class COLOR_BALANCING_CASE:
             shape_item = SHAPE(left=shape_coor[0], bottom=shape_coor[1], right=shape_coor[2], top=shape_coor[3])
             shape_item.color = COLOR.NOCOLOR
             self.shapes.append(shape_item)
-    
+
     # 设置边界并可视化
     def set_bounding(self):
 
@@ -475,6 +471,15 @@ class COLOR_BALANCING_CASE:
                 left_bottom_coor = COOR(x=self.max_right-dens_win_size, y=self.max_top-dens_win_size)
                 color_density_window = COLOR_DENSITY_WINDOWS(dens_win_size, left_bottom_coor)
                 self.windows.append(color_density_window)
+    
+    # 设置 windows 中的 shapes
+    def set_shapes_in_windows(self):
+        
+        for shape_item in self.shapes:
+            if not shape_item.color == COLOR.UNCOLORABLE:
+                for windows_item in self.windows:
+                    if shape_item.is_in_window(windows_item):
+                        windows_item.shapes.append(shape_item)
 
     # 打印信息
     def show_case(self):
@@ -553,11 +558,15 @@ class COLOR_BALANCING_CASE:
 
     # 给所有的组上色
     def color_all_groups(self, color_sequence):
-        
-        index = 0
         # 这里 color_sequence 的长度应该和可以上色的组的数量相同
+        index = 0
+
         for group_item in self.groups:
             if group_item.is_colorable == True:
+                # 上色前清空所有已上的色
+                for shape_item in group_item.shapes:
+                    shape_item.color = COLOR.NOCOLOR
+                # 上色
                 if color_sequence[index] == '0':
                     group_item.color_shapes(COLOR.CA)
                 else:
@@ -579,6 +588,6 @@ class COLOR_BALANCING_CASE:
         base_score = float(100/windows_num)
 
         for window_item in self.windows:
-            score = score + base_score - window_item.length*float(abs(window_item.density_A-window_item.density_B))
+            score = score + base_score - window_item.length*0.015*float(abs(window_item.density_A-window_item.density_B))
 
         return score

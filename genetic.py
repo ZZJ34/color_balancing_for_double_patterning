@@ -5,12 +5,12 @@ import copy
 # 定义全局变量
 cross_rate = 0.7        # 交叉率
 mutation_rate = 0.001   # 变异率
-max_generations = 400   # 最大进化次数
+
 
 
 # 个体类
 class CHROMOSOME:
-    def __init__(self, length, case, bits=""):
+    def __init__(self, case, length=0, bits=""):
         self.bits = ''
         self.fitness = 0
         
@@ -44,22 +44,33 @@ class CHROMOSOME:
 # 种群类
 class GENOME:
 
-    def __init__(self, chromosomes, case, chromosome_length, genome_length):
+    def __init__(self, chromosomes, case, chromosome_length, chromosome_num):
         self.chromosomes = chromosomes
         self.case = case
         self.chromosome_length = chromosome_length  
-        self.genome_length = genome_length         # 种群大小
+        self.chromosome_num = chromosome_num         
         self.total_fitness = 0
+
+    # 计算整体的适应度
+    def cal_total_fitness(self):
+        self.total_fitness = 0
+        for chromosome in self.chromosomes:
+            self.total_fitness += chromosome.get_fitness()
 
     # 变异
     def mutate(self, chromosome_bits):
         global mutation_rate
-        for index, bit  in enumerate(chromosome_bits):
+        chromosome_bits_temp = []
+        for bit  in chromosome_bits:
             if random.random() < mutation_rate:
                 if bit == '0':
-                    chromosome_bits[index] = '1'
+                    chromosome_bits_temp.append('1')
                 else:
-                    chromosome_bits[index] = '0'
+                    chromosome_bits_temp.append('0')
+            else:
+                chromosome_bits_temp.append(bit)
+        
+        return ''.join(chromosome_bits_temp)
 
     # 交叉
     def crossover(self, chromosome_bits_1, chromosome_bits_2):
@@ -69,12 +80,56 @@ class GENOME:
             crossover_point = random.randint(0, self.chromosome_length-1)
             t1 = chromosome_bits_1[0:crossover_point] + chromosome_bits_2[crossover_point:]
             t2 = chromosome_bits_2[0:crossover_point] + chromosome_bits_1[crossover_point:]
-            # 深度拷贝
-            chromosome_bits_1 = copy.deepcopy(t1)
-            chromosome_bits_2 = copy.deepcopy(t2)
-    
+            
+            return [t1, t2]
+
+        return [chromosome_bits_1, chromosome_bits_2]
+
     # 筛选个体（轮盘法，roulette wheel selection）
     def roulette_wheel_selecte(self):
-        pass
+        slice = random.random() * self.total_fitness
+        fitness_so_far = 0
+        for chromosome in self.chromosomes:
+            fitness_so_far += chromosome.get_fitness()
+            if(fitness_so_far >= slice):
+                return chromosome.get_bits()
+    
+    # 获取当前种群最佳的个体
+    def get_best_chromosome(self):
+        best_fitness = 0
+        best_index = 0
+        for index, chromosome in enumerate(self.chromosomes):
+            if chromosome.get_fitness() > best_fitness:
+                best_fitness = chromosome.get_fitness()
+                best_index = index
+
+        return self.chromosomes[best_index]
+
+    # 生成新的种群
+    def gen_new_chromosome(self):
+        # 计算当前种群总的适应度
+        self.cal_total_fitness()
+        # 新的种群
+        chromosomes_temp = []
+        chromosomes_count = 0
+        
+        while chromosomes_count < self.chromosome_num:
+
+            bits_1 = self.roulette_wheel_selecte()
+            bits_2 = self.roulette_wheel_selecte()
 
 
+            [bits_1, bits_2] = self.crossover(bits_1, bits_2)
+
+
+            bits_1 = self.mutate(bits_1)
+            bits_2 = self.mutate(bits_2)
+
+
+            chromosomes_temp.append(CHROMOSOME(self.case, bits=bits_1))
+            chromosomes_temp.append(CHROMOSOME(self.case, bits=bits_2))
+            
+            chromosomes_count += 2
+        
+
+        self.chromosomes = copy.deepcopy(chromosomes_temp)
