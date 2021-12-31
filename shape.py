@@ -66,24 +66,32 @@ class COLOR_DENSITY_WINDOWS:
             return shape_item.area()
 
         # shape 的两个点位于 window 内部
-        if is_left_bottom_in and is_left_top_in:
+        if is_left_bottom_in and is_left_top_in and (not is_right_bottom_in) and (not is_right_top_in):
+            # 左边的两个点在
             return (shape_item.top() - shape_item.bottom()) * (self.left_bottom_coor.x + self.length - shape_item.left())
-        elif is_left_bottom_in and is_right_bottom_in:
-            return (shape_item.right() - shape_item.left()) * (self.left_bottom_coor.y + self.length - shape_item.top())
-        elif is_right_bottom_in and is_right_top_in:
+        elif is_left_bottom_in and is_right_bottom_in and (not is_left_top_in) and (not is_right_top_in):
+            # 下面的两个点在
+            return (shape_item.right() - shape_item.left()) * (self.left_bottom_coor.y + self.length - shape_item.bottom())
+        elif is_right_bottom_in and is_right_top_in and (not is_left_top_in) and (not is_left_bottom_in):
+            # 右面的两个点在
             return (shape_item.top() - shape_item.bottom()) * (shape_item.right() - self.left_bottom_coor.x)
-        elif is_right_top_in and is_left_top_in:
+        elif is_right_top_in and is_left_top_in and (not is_left_bottom_in) and (not is_right_bottom_in):
+            # 上面的两个点在
             return (shape_item.right() - shape_item.left()) * (shape_item.top() - self.left_bottom_coor.y)
 
         
         # shape 的一个点位于 windows 内部
-        if is_left_bottom_in:
+        if is_left_bottom_in and (not is_right_bottom_in) and (not is_left_top_in) and (not is_right_top_in):
+            # 左下的点在
             return (self.left_bottom_coor.x + self.length - shape_item.left()) * (self.left_bottom_coor.y + self.length - shape_item.bottom())
-        elif is_right_bottom_in:
+        elif is_right_bottom_in and (not is_left_bottom_in) and (not is_left_top_in) and (not is_right_top_in):
+            # 右下的点在
             return (shape_item.right() - self.left_bottom_coor.x) * (self.left_bottom_coor.y + self.length - shape_item.bottom())
-        elif is_left_top_in:
+        elif is_left_top_in and (not is_left_bottom_in) and (not is_right_bottom_in) and (not is_right_top_in):
+            # 左上的点在
             return (self.left_bottom_coor.x + self.length - shape_item.left()) * (shape_item.top() - self.left_bottom_coor.y)
-        elif is_right_top_in:
+        elif is_right_top_in and (not is_right_bottom_in) and (not is_left_bottom_in) and (not is_left_top_in):
+            # 右上的点在
             return (shape_item.right() - self.left_bottom_coor.x) * (shape_item.top() - self.left_bottom_coor.y)
 
         print("数据错误 该 SHAPE 不在此 WINDOWS 当中")
