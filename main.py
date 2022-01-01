@@ -3,10 +3,10 @@ from genetic import *
 import time
 
 # 种群大小
-chromosome_num = 75
+chromosome_num = 100
 # 最大进化次数
 max_generations_num = 25
-max_get_result_num = 23
+max_get_result_num = 20
 
 if __name__ == "__main__":
 
@@ -14,10 +14,10 @@ if __name__ == "__main__":
 
     input_file = "./input/iccad2015_input.case5"
 
-    name = input_file.split('\\')[-1].replace('input', 'output')
+    name = input_file.split('/')[-1].replace('input', 'output')
+    print(name)
 
     case = COLOR_BALANCING_CASE(input_file, is_show_case=False, is_show_visualization=True)
-
     
     print("\n遗传算法............\n")
 

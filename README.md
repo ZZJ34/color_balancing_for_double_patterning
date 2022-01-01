@@ -41,5 +41,3 @@
   
   * 个体选择（轮盘法，roulette wheel selection；竞争法，tournament selection；等级轮盘法，Rank Based Wheel Selection）
   * 选择其他优化算法
-
-* windows 和 shape 重合面积的计算

@@ -33,17 +33,6 @@ class COOR:
         else:
             print('COOR 类初始化参数不足')
 
-    def is_in_window(self, window_item):
-        win_left = window_item.left_bottom_coor.x;
-        win_bottom = window_item.left_bottom_coor.y;
-        win_length = window_item.length;
-
-        if self.x > win_left and self.y > win_bottom:
-            if  self.x <= (win_left + win_length) and self.y <= (win_bottom + win_length):
-                return True
-
-        return False
-
 # 定义窗口类
 class COLOR_DENSITY_WINDOWS:
 
@@ -56,45 +45,25 @@ class COLOR_DENSITY_WINDOWS:
 
     # 计算 shape 和此 windows 的重合面积
     def overlap_area(self, shape_item):
-        is_left_bottom_in = COOR(x=shape_item.left(), y=shape_item.bottom()).is_in_window(self)
-        is_left_top_in = COOR(x=shape_item.left(), y=shape_item.top()).is_in_window(self)
-        is_right_bottom_in =COOR(x=shape_item.right(), y=shape_item.bottom()).is_in_window(self)
-        is_right_top_in = COOR(x=shape_item.right(), y=shape_item.top()).is_in_window(self)
 
-        # shape 位于 window 内部
-        if is_left_bottom_in and is_left_top_in and is_right_bottom_in and is_right_top_in:
-            return shape_item.area()
+        [shape_left, shape_bottom] = [shape_item.left(), shape_item.bottom()]
+        [window_left, window_bottom] = [self.left_bottom_coor.x, self.left_bottom_coor.y]
 
-        # shape 的两个点位于 window 内部
-        if is_left_bottom_in and is_left_top_in and (not is_right_bottom_in) and (not is_right_top_in):
-            # 左边的两个点在
-            return (shape_item.top() - shape_item.bottom()) * (self.left_bottom_coor.x + self.length - shape_item.left())
-        elif is_left_bottom_in and is_right_bottom_in and (not is_left_top_in) and (not is_right_top_in):
-            # 下面的两个点在
-            return (shape_item.right() - shape_item.left()) * (self.left_bottom_coor.y + self.length - shape_item.bottom())
-        elif is_right_bottom_in and is_right_top_in and (not is_left_top_in) and (not is_left_bottom_in):
-            # 右面的两个点在
-            return (shape_item.top() - shape_item.bottom()) * (shape_item.right() - self.left_bottom_coor.x)
-        elif is_right_top_in and is_left_top_in and (not is_left_bottom_in) and (not is_right_bottom_in):
-            # 上面的两个点在
-            return (shape_item.right() - shape_item.left()) * (shape_item.top() - self.left_bottom_coor.y)
+        overlay_left = max(shape_left, window_left)
+        overlay_bottom = max(shape_bottom, window_bottom)
 
-        
-        # shape 的一个点位于 windows 内部
-        if is_left_bottom_in and (not is_right_bottom_in) and (not is_left_top_in) and (not is_right_top_in):
-            # 左下的点在
-            return (self.left_bottom_coor.x + self.length - shape_item.left()) * (self.left_bottom_coor.y + self.length - shape_item.bottom())
-        elif is_right_bottom_in and (not is_left_bottom_in) and (not is_left_top_in) and (not is_right_top_in):
-            # 右下的点在
-            return (shape_item.right() - self.left_bottom_coor.x) * (self.left_bottom_coor.y + self.length - shape_item.bottom())
-        elif is_left_top_in and (not is_left_bottom_in) and (not is_right_bottom_in) and (not is_right_top_in):
-            # 左上的点在
-            return (self.left_bottom_coor.x + self.length - shape_item.left()) * (shape_item.top() - self.left_bottom_coor.y)
-        elif is_right_top_in and (not is_right_bottom_in) and (not is_left_bottom_in) and (not is_left_top_in):
-            # 右上的点在
-            return (shape_item.right() - self.left_bottom_coor.x) * (shape_item.top() - self.left_bottom_coor.y)
+        [shape_right, shape_top] = [shape_item.right(), shape_item.top()]
+        [window_right, window_top] = [self.left_bottom_coor.x+self.length, self.left_bottom_coor.y+self.length]
 
-        print("数据错误 该 SHAPE 不在此 WINDOWS 当中")
+        overlay_right = min(shape_right, window_right)
+        overlay_top = min(shape_top, window_top)
+
+        overlay_area = (overlay_right-overlay_left) * (overlay_top-overlay_bottom)
+
+        if overlay_area <= 0:
+            print("数据错误 该 SHAPE 不在此 WINDOWS 当中")
+        else:
+            return overlay_area
     
     # 计算颜色密度
     def cal_density(self):
@@ -142,10 +111,6 @@ class SHAPE:
     def left(self):
         return self.left_bottom_coor.x
 
-    # 获取形状面积
-    def area(self):
-        return (self.right()-self.left())*(self.top()-self.bottom())
-
     # 判断 self 相对 shape_item 的位置关系
     def is_above(self, shape_item):
         return self.bottom() > shape_item.top()
@@ -188,31 +153,6 @@ class SHAPE:
     # 记录相邻的 shape
     def set_neighbor(self, shape_item):
         self.neighbor.append(shape_item)
-    
-    # 判断是否在窗口内
-    def is_in_window(self, window_item):
-        # 有重叠就算
-        # 左下
-        left_bottom_coor = COOR(x=self.left(), y=self.bottom())
-        if left_bottom_coor.is_in_window(window_item):
-            return True
-        # 左上
-        left_top_coor = COOR(x=self.left(), y=self.top())
-        if left_top_coor.is_in_window(window_item):
-            return True
-        # 右上
-        right_top_coor = COOR(x=self.right(), y=self.top())
-        if right_top_coor.is_in_window(window_item):
-            return True
-        # 右下
-        right_bottom_coor = COOR(x=self.right(), y=self.bottom())
-        if right_bottom_coor.is_in_window(window_item):
-            return True
-        
-        return False
-    # 记录所在窗口
-    def set_window(self, window_item):
-        self.window = window_item
     
     # 打印 shape 信息
     def show_shape(self):
@@ -531,8 +471,17 @@ class COLOR_BALANCING_CASE:
         for shape_item in self.shapes:
             if not shape_item.color == COLOR.UNCOLORABLE:
                 for windows_item in self.windows:
-                    if shape_item.is_in_window(windows_item):
-                        windows_item.shapes.append(shape_item)
+                    
+                    if shape_item.top() <= windows_item.left_bottom_coor.y:
+                        continue
+                    if shape_item.bottom() >= windows_item.left_bottom_coor.y+windows_item.length:
+                        continue
+                    if shape_item.right() <= windows_item.left_bottom_coor.x:
+                        continue
+                    if shape_item.left() >= windows_item.left_bottom_coor.x+windows_item.length:
+                        continue
+
+                    windows_item.shapes.append(shape_item)
 
     # 打印信息
     def show_case(self):
