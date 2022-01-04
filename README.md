@@ -37,7 +37,9 @@
   * `mutation_rate`
   
 
-* 遗传算法
+* 优化算法
   
-  * 个体选择（轮盘法，roulette wheel selection；竞争法，tournament selection；等级轮盘法，Rank Based Wheel Selection）
+  * 遗传算法的个体选择（轮盘法，roulette wheel selection；竞争法，tournament selection；等级轮盘法，Rank Based Wheel Selection）
   * 选择其他优化算法
+
+* 优化评分

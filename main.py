@@ -12,12 +12,11 @@ if __name__ == "__main__":
 
     print("\n数据准备............\n")
 
-    input_file = "./input/iccad2015_input.case5"
+    input_file = "./input/iccad2015_input.case2"
 
     name = input_file.split('/')[-1].replace('input', 'output')
-    print(name)
 
-    case = COLOR_BALANCING_CASE(input_file, is_show_case=False, is_show_visualization=True)
+    case = COLOR_BALANCING_CASE(input_file, is_show_case=True, is_show_visualization=True)
     
     print("\n遗传算法............\n")
 

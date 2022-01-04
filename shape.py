@@ -635,6 +635,7 @@ class COLOR_BALANCING_CASE:
         windows_num = len(self.windows)
 
         for window_item in self.windows:
+            
             score += 1-float(abs(window_item.density_A-window_item.density_B))
 
         return score/windows_num
