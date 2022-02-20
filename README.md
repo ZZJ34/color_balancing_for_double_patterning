@@ -12,7 +12,7 @@
 
 仅作为兴趣探索，使用 python 尽可能详细展示整体的步骤流程
 
-参考连接：https://github.com/kevinkevin556/color-patterning-with-GA
+参考：https://github.com/kevinkevin556/color-patterning-with-GA
 
 ### Getting Started
 
