@@ -16,7 +16,7 @@
 
 ### Getting Started
 
-直接运行 main.py
+安装相关依赖后直接运行 main.py
     
     python3 main.py
 
